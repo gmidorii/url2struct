@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
+	"io"
 	"net/http"
 	"net/url"
 
@@ -11,18 +12,19 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-func Field(key string, val interface{}) string {
-	switch val.(type) {
-	case float64:
-		return fmt.Sprintf("%v float64`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
-	case int:
-		return fmt.Sprintf("%v int`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
-	default:
-		return fmt.Sprintf("%v string`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
+func Generate(rawurl string, queryWriter, responseWriter io.Writer) error {
+
+	if err := query(rawurl, queryWriter); err != nil {
+		return err
 	}
+	if err := response(rawurl, responseWriter); err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func Generate(rawurl string) error {
+func query(rawurl string, w io.Writer) error {
 	u, err := url.Parse(rawurl)
 	if err != nil {
 		return err
@@ -34,25 +36,32 @@ func Generate(rawurl string) error {
 	fmt.Fprint(&buf, "type AutoQuery struct {")
 	for k, v := range q {
 		// use array values only lead.
-		fmt.Fprint(&buf, Field(k, v[0]))
+		fmt.Fprint(&buf, field(k, v[0]))
 	}
-	fmt.Fprint(&buf, "}")
+	fmt.Fprint(&buf, "}\n")
 
 	src, err := format.Source(buf.Bytes())
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(string(src))
-
-	if err := response(rawurl); err != nil {
-		fmt.Println(err)
-	}
+	fmt.Fprint(w, string(src))
 
 	return nil
 }
 
-func response(rawurl string) error {
+func field(key string, val interface{}) string {
+	switch val.(type) {
+	case float64:
+		return fmt.Sprintf("%v float64`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
+	case int:
+		return fmt.Sprintf("%v int`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
+	default:
+		return fmt.Sprintf("%v string`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
+	}
+}
+
+func response(rawurl string, w io.Writer) error {
 	resp, err := http.Get(rawurl)
 	if err != nil {
 		return err
@@ -63,6 +72,7 @@ func response(rawurl string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(string(b))
+
+	fmt.Fprint(w, string(b))
 	return nil
 }
