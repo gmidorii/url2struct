@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/ChimeraCoder/gojson"
 	"github.com/iancoleman/strcase"
@@ -50,15 +51,50 @@ func query(rawurl string, w io.Writer) error {
 	return nil
 }
 
-func field(key string, val interface{}) string {
-	switch val.(type) {
-	case float64:
-		return fmt.Sprintf("%v float64`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
-	case int:
-		return fmt.Sprintf("%v int`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
+func field(key, val string) string {
+	switch {
+	case isInt(val):
+		return fieldFormat("int", key, val)
+	case isFloat64(val):
+		return fieldFormat("float64", key, val)
+	case isBool(val):
+		return fieldFormat("bool", key, val)
 	default:
-		return fmt.Sprintf("%v string`url:\"%v\"`;", strcase.ToCamel(key), strcase.ToSnake(key))
+		return fieldFormat("string", key, val)
 	}
+}
+
+func fieldFormat(vType, key, val string) string {
+	return fmt.Sprintf("%v %v`url:\"%v\"`;", strcase.ToCamel(key), vType, strcase.ToSnake(key))
+}
+
+func isBool(v string) bool {
+	_, err := strconv.ParseBool(v)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func isInt(v string) bool {
+	_, err := strconv.Atoi(v)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+func isFloat64(v string) bool {
+	// check int value.
+	if isInt(v) {
+		return false
+	}
+
+	_, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		return false
+	}
+	return true
 }
 
 func response(rawurl string, w io.Writer) error {
