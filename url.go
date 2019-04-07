@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -13,22 +12,22 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-func Generate(rawurl string, queryWriter, responseWriter io.Writer) error {
-
-	if err := query(rawurl, queryWriter); err != nil {
-		return err
+func Generate(rawurl string) (rawQueryStruct, rawResStruct string, err error) {
+	rawQueryStruct, err = query(rawurl)
+	if err != nil {
+		return
 	}
-	if err := response(rawurl, responseWriter); err != nil {
-		return err
+	rawResStruct, err = response(rawurl)
+	if err != nil {
+		return
 	}
-
-	return nil
+	return
 }
 
-func query(rawurl string, w io.Writer) error {
+func query(rawurl string) (string, error) {
 	u, err := url.Parse(rawurl)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	q := u.Query()
@@ -43,12 +42,10 @@ func query(rawurl string, w io.Writer) error {
 
 	src, err := format.Source(buf.Bytes())
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fmt.Fprint(w, string(src))
-
-	return nil
+	return string(src), nil
 }
 
 func field(key, val string) string {
@@ -97,18 +94,17 @@ func isFloat64(v string) bool {
 	return true
 }
 
-func response(rawurl string, w io.Writer) error {
+func response(rawurl string) (string, error) {
 	resp, err := http.Get(rawurl)
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	b, err := gojson.Generate(resp.Body, gojson.ParseJson, "AutoResponse", "response", []string{"json"}, true, true)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	fmt.Fprint(w, string(b))
-	return nil
+	return string(b), nil
 }

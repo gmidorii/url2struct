@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"log"
 	"os"
 
@@ -27,12 +28,18 @@ func main() {
 		}
 		defer rf.Close()
 
-		if err := url2struct.Generate(*u, qf, rf); err != nil {
+		rawQ, rawRes, err := url2struct.Generate(*u)
+		if err != nil {
 			log.Printf("command error: %v\n", err)
 		}
+		fmt.Fprintln(qf, rawQ)
+		fmt.Fprintln(rf, rawRes)
 	} else {
-		if err := url2struct.Generate(*u, os.Stdout, os.Stdout); err != nil {
+		rawQ, rawRes, err := url2struct.Generate(*u)
+		if err != nil {
 			log.Printf("command error: %v\n", err)
 		}
+		fmt.Fprintln(os.Stdout, rawQ)
+		fmt.Fprintln(os.Stdout, rawRes)
 	}
 }
