@@ -14,5 +14,6 @@
 *.out
 
 
-cmd/u2s/u2s
+url2struct
+u2s
 cmd/u2s/*.go

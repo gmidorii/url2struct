@@ -6,13 +6,18 @@ generate Go query/response struct from raw url.
 
 ## Usage
 
+### Install
+
+```sh
+go get github.com/gmidorii/url2struct
+```
+
 ### Command
 
 build
 
 ```sh
-cd cmd/u2s
-go build
+make build
 ```
 
 run
@@ -31,17 +36,21 @@ Usage of ./u2s:
 ### Module
 
 ```go
-url2struct.Generate("http://example.com/sample", queryFileWriter, responseFileWriter)
+if err := url2struct.Generate("http://example.com/sample", queryFileWriter, responseFileWriter); err != nil {
+}
 ```
 
 ## Example
 
-mock server
+start mock server
+
 ```sh
+# localhost:6666
 go run mock/mock.go
 ```
 
 command
+
 ```sh
 # output to stdout
 ./u2s -u "http://localhost:6666/example?hoge=2&fuga=1.0&foo=str"
